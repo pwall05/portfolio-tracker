@@ -39,7 +39,7 @@ export function getLatestIngestionTimestamp() {
       .prepare(
         "SELECT MAX(updated_at) as updated_at FROM income_statements WHERE updated_at IS NOT NULL"
       )
-      .get();
+      .get() as { updated_at?: string | null } | undefined;
 
     return row?.updated_at ?? null;
   } finally {
@@ -56,7 +56,7 @@ export function getLatestSyncLog(): SyncLog | null {
       .prepare(
         "SELECT synced_at, symbols, status, message FROM sync_logs ORDER BY synced_at DESC LIMIT 1"
       )
-      .get();
+      .get() as SyncLog | undefined;
 
     return row ?? null;
   } finally {
@@ -73,7 +73,7 @@ export function getSyncLogs(limit = 5): SyncLog[] {
       .prepare(
         "SELECT synced_at, symbols, status, message FROM sync_logs ORDER BY synced_at DESC LIMIT ?"
       )
-      .all(limit);
+      .all(limit) as SyncLog[];
   } finally {
     db.close();
   }
@@ -92,7 +92,7 @@ export function getIncomeStatementsFromDb(symbol: string, limit = 5): DbIncomeRo
          ORDER BY date DESC
          LIMIT ?`
       )
-      .all(symbol.toUpperCase(), limit);
+      .all(symbol.toUpperCase(), limit) as DbIncomeRow[];
   } finally {
     db.close();
   }
@@ -111,7 +111,7 @@ export function getCashFlowStatementsFromDb(symbol: string, limit = 5): DbCashRo
          ORDER BY date DESC
          LIMIT ?`
       )
-      .all(symbol.toUpperCase(), limit);
+      .all(symbol.toUpperCase(), limit) as DbCashRow[];
   } finally {
     db.close();
   }
@@ -138,7 +138,7 @@ export function getBalanceSheetsFromDb(symbol: string, limit = 5): DbBalanceRow[
          ORDER BY date DESC
          LIMIT ?`
       )
-      .all(symbol.toUpperCase(), limit);
+      .all(symbol.toUpperCase(), limit) as DbBalanceRow[];
   } finally {
     db.close();
   }
