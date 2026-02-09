@@ -22,8 +22,10 @@ export function openDb() {
 }
 
 function getExistingColumns(db: Database.Database, table: string) {
-  const rows = db.prepare(`PRAGMA table_info(${table})`).all();
-  return new Set(rows.map((row: { name: string }) => row.name));
+  const rows = db
+    .prepare(`PRAGMA table_info(${table})`)
+    .all() as { name: string }[];
+  return new Set(rows.map((row) => row.name));
 }
 
 function addMissingColumns(
