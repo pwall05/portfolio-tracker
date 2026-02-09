@@ -24,6 +24,10 @@ type FmpBalanceSheet = {
   totalAssets?: number;
   totalLiabilities?: number;
   cashAndCashEquivalents?: number;
+  totalCurrentAssets?: number;
+  totalCurrentLiabilities?: number;
+  totalDebt?: number;
+  totalStockholdersEquity?: number;
 };
 
 const FMP_BASE_URL = "https://financialmodelingprep.com/stable";
