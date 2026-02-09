@@ -130,8 +130,10 @@ function upsertCompany(db: Database.Database, symbol: string, name: string | nul
   );
   insert.run(symbol, name);
 
-  const row = db.prepare("SELECT id FROM companies WHERE symbol = ?").get(symbol);
-  return row?.id as number | undefined;
+  const row = db
+    .prepare("SELECT id FROM companies WHERE symbol = ?")
+    .get(symbol) as { id?: number } | undefined;
+  return row?.id;
 }
 
 function upsertIncomeStatement(
