@@ -3,6 +3,7 @@ type FmpQuote = {
   price?: number;
   change?: number;
   changesPercentage?: number | string;
+  marketCap?: number;
 };
 
 const FMP_BASE_URL = "https://financialmodelingprep.com/stable";
@@ -14,6 +15,25 @@ function formatMoney(value: number) {
     currency: "USD",
     maximumFractionDigits: 2,
   });
+}
+
+function formatMarketCap(value?: number) {
+  if (value === undefined) {
+    return null;
+  }
+
+  const absValue = Math.abs(value);
+  if (absValue >= 1_000_000_000_000) {
+    return `$${(value / 1_000_000_000_000).toFixed(2)}T`;
+  }
+  if (absValue >= 1_000_000_000) {
+    return `$${(value / 1_000_000_000).toFixed(1)}B`;
+  }
+  if (absValue >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(0)}M`;
+  }
+
+  return `$${value.toLocaleString("en-US")}`;
 }
 
 function parsePercent(value: number | string | undefined) {
@@ -60,7 +80,9 @@ export async function getFmpQuotes(symbols: string[], revalidate = DEFAULT_REVAL
     return {
       quotes: new Map<string, FmpQuote>(),
       formatMoney,
+      formatMarketCap,
       formatDayChange,
+      error: "no_symbols",
     };
   }
 
@@ -69,7 +91,9 @@ export async function getFmpQuotes(symbols: string[], revalidate = DEFAULT_REVAL
     return {
       quotes: new Map<string, FmpQuote>(),
       formatMoney,
+      formatMarketCap,
       formatDayChange,
+      error: "missing_api_key",
     };
   }
 
@@ -87,7 +111,9 @@ export async function getFmpQuotes(symbols: string[], revalidate = DEFAULT_REVAL
     return {
       quotes: new Map<string, FmpQuote>(),
       formatMoney,
+      formatMarketCap,
       formatDayChange,
+      error: `fmp_error_${response.status}`,
     };
   }
 
@@ -98,5 +124,5 @@ export async function getFmpQuotes(symbols: string[], revalidate = DEFAULT_REVAL
       .map((item) => [item.symbol.toUpperCase(), item])
   );
 
-  return { quotes, formatMoney, formatDayChange };
+  return { quotes, formatMoney, formatMarketCap, formatDayChange };
 }
