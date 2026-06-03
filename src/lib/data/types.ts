@@ -9,6 +9,7 @@ export type Holding = {
   shares: string;
   price: string;
   dayChange: string;
+  marketCap?: string;
 };
 
 export type TransactionAction = "Buy" | "Sell";
@@ -83,6 +84,8 @@ export type CompanySnapshot = {
   positionSize: string;
   costBasis: string;
   currentPrice: string;
+  dayChange?: string;
+  marketCap?: string;
 };
 
 export type CompanyStatus = {

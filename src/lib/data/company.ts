@@ -7,6 +7,8 @@ const thesisMap: Record<string, CompanyThesis> = {
       positionSize: "14% of portfolio",
       costBasis: "$162.10",
       currentPrice: "$186.22",
+      dayChange: "—",
+      marketCap: "—",
     },
     keyQuestions: [
       "What keeps demand resilient?",
@@ -34,6 +36,8 @@ const thesisMap: Record<string, CompanyThesis> = {
       positionSize: "11% of portfolio",
       costBasis: "$352.40",
       currentPrice: "$412.08",
+      dayChange: "—",
+      marketCap: "—",
     },
     keyQuestions: [
       "Can AI attach boost ARPU?",
@@ -61,6 +65,8 @@ const thesisMap: Record<string, CompanyThesis> = {
       positionSize: "9% of portfolio",
       costBasis: "$512.90",
       currentPrice: "$621.44",
+      dayChange: "—",
+      marketCap: "—",
     },
     keyQuestions: [
       "Is demand still supply constrained?",
@@ -90,6 +96,8 @@ const fallbackThesis: CompanyThesis = {
     positionSize: "0% of portfolio",
     costBasis: "—",
     currentPrice: "—",
+    dayChange: "—",
+    marketCap: "—",
   },
   keyQuestions: [
     "What is the core thesis?",

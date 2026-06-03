@@ -83,19 +83,22 @@ function formatRatio(value?: number) {
 
 export async function getPortfolioOverview() {
   const symbols = holdings.map((holding) => holding.symbol);
-  const { quotes, formatMoney, formatDayChange } = await getFmpQuotes(symbols);
+  const { quotes, formatMoney, formatMarketCap, formatDayChange } =
+    await getFmpQuotes(symbols);
 
   const liveHoldings = holdings.map((holding) => {
     const quote = quotes.get(holding.symbol.toUpperCase());
     const price = quote?.price;
     const change = quote?.change;
     const percent = quote?.changesPercentage;
+    const marketCap = quote?.marketCap;
 
     return {
       ...holding,
       price: price !== undefined ? formatMoney(price) : holding.price,
       dayChange:
         formatDayChange(price, change, percent) ?? holding.dayChange,
+      marketCap: formatMarketCap(marketCap) ?? holding.marketCap,
     };
   });
 
@@ -197,7 +200,6 @@ export async function getFinancialOverview() {
   const latestIncome = baseIncomeSorted[0];
   const previousIncome = baseIncomeSorted[1];
   const latestCash = baseCashSorted[0];
-  const previousCash = baseCashSorted[1];
   const latestBalance = baseBalanceSorted[0];
   const previousBalance = baseBalanceSorted[1];
 
@@ -348,7 +350,8 @@ export async function getFinancialOverview() {
 
 export async function getCompanyThesisData(symbol: string) {
   const thesis = getCompanyThesis(symbol);
-  const { quotes, formatMoney } = await getFmpQuotes([symbol]);
+  const { quotes, formatMoney, formatMarketCap, formatDayChange } =
+    await getFmpQuotes([symbol]);
   const quote = quotes.get(symbol.toUpperCase());
 
   if (!quote?.price) {
@@ -360,6 +363,11 @@ export async function getCompanyThesisData(symbol: string) {
     snapshot: {
       ...thesis.snapshot,
       currentPrice: formatMoney(quote.price),
+      dayChange:
+        formatDayChange(quote.price, quote.change, quote.changesPercentage) ??
+        thesis.snapshot.dayChange,
+      marketCap:
+        formatMarketCap(quote.marketCap) ?? thesis.snapshot.marketCap,
     },
   };
 }

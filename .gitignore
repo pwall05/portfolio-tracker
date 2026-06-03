@@ -35,6 +35,8 @@ yarn-error.log*
 
 # local data
 /data/
+# but commit the generated mobile snapshot so deploys include the data
+!data/mobile-snapshot.json
 
 # legacy/local artifacts
 dev.db

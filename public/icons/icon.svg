@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Portfolio icon">
+  <rect width="512" height="512" rx="96" fill="#0b0d0f"/>
+  <path d="M104 340h304v48H104z" fill="#e5e7eb"/>
+  <path d="M120 276h64v48h-64z" fill="#34d399"/>
+  <path d="M224 212h64v112h-64z" fill="#38bdf8"/>
+  <path d="M328 132h64v192h-64z" fill="#f59e0b"/>
+  <path d="M104 388h304v16H104z" fill="#52525b"/>
+</svg>

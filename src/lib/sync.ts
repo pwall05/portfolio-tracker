@@ -7,6 +7,38 @@ import { holdings } from "@/lib/data";
 const FMP_BASE_URL = "https://financialmodelingprep.com/stable";
 const DEFAULT_LIMIT = 5;
 
+type FmpIncomeStatement = {
+  date: string;
+  calendarYear?: string;
+  period?: string;
+  revenue?: number;
+  grossProfit?: number;
+  operatingIncome?: number;
+  netIncome?: number;
+};
+
+type FmpCashFlowStatement = {
+  date: string;
+  calendarYear?: string;
+  period?: string;
+  operatingCashFlow?: number;
+  capitalExpenditure?: number;
+  freeCashFlow?: number;
+};
+
+type FmpBalanceSheet = {
+  date: string;
+  calendarYear?: string;
+  period?: string;
+  totalAssets?: number;
+  totalLiabilities?: number;
+  cashAndCashEquivalents?: number;
+  totalCurrentAssets?: number;
+  totalCurrentLiabilities?: number;
+  totalDebt?: number;
+  totalStockholdersEquity?: number;
+};
+
 function getApiKey() {
   const apiKey = process.env.FMP_API_KEY;
   if (!apiKey) {
@@ -15,7 +47,7 @@ function getApiKey() {
   return apiKey;
 }
 
-async function fetchFmp(pathSegment: string, params: Record<string, string>) {
+async function fetchFmp<T>(pathSegment: string, params: Record<string, string>) {
   const apiKey = getApiKey();
   const searchParams = new URLSearchParams({
     ...params,
@@ -26,7 +58,7 @@ async function fetchFmp(pathSegment: string, params: Record<string, string>) {
   if (!response.ok) {
     throw new Error(`FMP request failed (${response.status}) for ${pathSegment}`);
   }
-  return response.json();
+  return (await response.json()) as T[];
 }
 
 function openDb() {
@@ -140,7 +172,7 @@ function upsertIncomeStatement(
   db: Database.Database,
   companyId: number,
   symbol: string,
-  row: any
+  row: FmpIncomeStatement
 ) {
   const stmt = db.prepare(
     `INSERT INTO income_statements (
@@ -173,7 +205,7 @@ function upsertCashFlowStatement(
   db: Database.Database,
   companyId: number,
   symbol: string,
-  row: any
+  row: FmpCashFlowStatement
 ) {
   const stmt = db.prepare(
     `INSERT INTO cash_flow_statements (
@@ -204,7 +236,7 @@ function upsertBalanceSheet(
   db: Database.Database,
   companyId: number,
   symbol: string,
-  row: any
+  row: FmpBalanceSheet
 ) {
   const stmt = db.prepare(
     `INSERT INTO balance_sheets (
@@ -268,17 +300,17 @@ export async function syncFinancials(symbols = holdings.map((h) => h.symbol)) {
       }
 
       const [incomeRows, cashRows, balanceRows] = await Promise.all([
-        fetchFmp("income-statement", {
+        fetchFmp<FmpIncomeStatement>("income-statement", {
           symbol: upper,
           limit: String(DEFAULT_LIMIT),
           period: "annual",
         }),
-        fetchFmp("cash-flow-statement", {
+        fetchFmp<FmpCashFlowStatement>("cash-flow-statement", {
           symbol: upper,
           limit: String(DEFAULT_LIMIT),
           period: "annual",
         }),
-        fetchFmp("balance-sheet-statement", {
+        fetchFmp<FmpBalanceSheet>("balance-sheet-statement", {
           symbol: upper,
           limit: String(DEFAULT_LIMIT),
           period: "annual",

@@ -1,10 +1,10 @@
-import PortfolioView from "@/components/mobile/PortfolioView";
+import { NextResponse } from "next/server";
+
 import { getMobileSnapshotWithMarket } from "@/lib/mobile/snapshot";
 
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export async function GET() {
   const snapshot = await getMobileSnapshotWithMarket();
-
-  return <PortfolioView snapshot={snapshot} />;
+  return NextResponse.json(snapshot.companies);
 }
