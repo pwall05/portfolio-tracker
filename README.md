@@ -35,6 +35,18 @@ The `.gitignore` explicitly allows `data/mobile-snapshot.json` while ignoring ot
 Set `PORTFOLIO_REPORT_DATA_PATH` to point at a specific report JSON when you
 do not want the newest dated packet.
 
+Set `PORTFOLIO_REPORT_DATA_URL` to pull the latest report packet from the live
+Portfolio Dashboard instead of local Obsidian report files:
+
+```bash
+PORTFOLIO_REPORT_DATA_URL="https://<portfolio-dashboard-domain>/api/reports/weekly/latest?format=data"
+PORTFOLIO_REPORT_DATA_TOKEN="<same value as the dashboard CRON_SECRET>"
+npm run snapshot:mobile
+```
+
+When the URL is set, the mobile snapshot builder tries the live dashboard first
+and falls back to the local Obsidian report packet if the live fetch fails.
+
 You can also override the snapshot output path with `MOBILE_SNAPSHOT_PATH` (both the generator and the app reader respect it).
 
 ## Environment

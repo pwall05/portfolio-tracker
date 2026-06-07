@@ -12,6 +12,11 @@ const OUTPUT_PATH =
   process.env.MOBILE_SNAPSHOT_PATH ||
   path.join(process.cwd(), "data", "mobile-snapshot.json");
 
+const PORTFOLIO_REPORT_DATA_URL = cleanString(process.env.PORTFOLIO_REPORT_DATA_URL);
+const PORTFOLIO_REPORT_DATA_TOKEN = cleanString(
+  process.env.PORTFOLIO_REPORT_DATA_TOKEN || process.env.PORTFOLIO_REPORT_API_TOKEN
+);
+
 const COMPANY_PROFILE_DIR = "03 Entities/Companies";
 const COMPANY_THESIS_DIR = "04 Thesis/Company";
 const INVESTMENT_THESIS_DIR = "04 Thesis/Investment";
@@ -519,34 +524,54 @@ function normalizeSignal(item) {
   });
 }
 
-function readPortfolioReport(issues) {
-  const reportPath = latestPortfolioReportPath();
-  if (!reportPath) {
-    issues.add({
-      severity: "warning",
-      filePath: WEEKLY_REPORT_DATA_DIR,
-      code: "portfolio_report_missing",
-      message: "No weekly portfolio data packet was found.",
-      suggestedFix:
-        "Generate a weekly portfolio report or set PORTFOLIO_REPORT_DATA_PATH.",
-    });
+async function fetchPortfolioReportData(issues) {
+  if (!PORTFOLIO_REPORT_DATA_URL) {
     return undefined;
   }
 
-  let parsed;
+  const headers = {};
+  if (PORTFOLIO_REPORT_DATA_TOKEN) {
+    headers.Authorization = `Bearer ${PORTFOLIO_REPORT_DATA_TOKEN}`;
+  }
+
   try {
-    parsed = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+    const response = await fetch(PORTFOLIO_REPORT_DATA_URL, {
+      headers,
+      cache: "no-store",
+    });
+
+    if (!response.ok) {
+      issues.add({
+        severity: "warning",
+        filePath: PORTFOLIO_REPORT_DATA_URL,
+        code: "portfolio_report_api_fetch_failed",
+        message: `Live portfolio report API returned ${response.status}.`,
+        suggestedFix:
+          "Check PORTFOLIO_REPORT_DATA_URL and PORTFOLIO_REPORT_DATA_TOKEN, then re-run npm run snapshot:mobile.",
+      });
+      return undefined;
+    }
+
+    const payload = await response.json();
+    const data = payload?.report?.data || payload?.data || payload;
+    return {
+      data,
+      sourcePath: PORTFOLIO_REPORT_DATA_URL,
+    };
   } catch (error) {
     issues.add({
-      severity: "error",
-      filePath: toPosixPath(path.relative(VAULT_PATH, reportPath)),
-      code: "portfolio_report_invalid_json",
-      message: `Portfolio report data could not be parsed: ${error.message}`,
-      suggestedFix: "Regenerate the weekly portfolio data packet.",
+      severity: "warning",
+      filePath: PORTFOLIO_REPORT_DATA_URL,
+      code: "portfolio_report_api_fetch_failed",
+      message: `Live portfolio report API could not be read: ${error.message}`,
+      suggestedFix:
+        "Check the live app URL, bearer token, and network connection, then re-run npm run snapshot:mobile.",
     });
     return undefined;
   }
+}
 
+function normalizePortfolioReport(parsed, sourcePath, issues) {
   const holdings = Array.isArray(parsed.holdings)
     ? parsed.holdings.map(normalizeHolding).filter(Boolean)
     : [];
@@ -554,7 +579,7 @@ function readPortfolioReport(issues) {
   if (holdings.length === 0) {
     issues.add({
       severity: "warning",
-      filePath: toPosixPath(path.relative(VAULT_PATH, reportPath)),
+      filePath: sourcePath,
       code: "portfolio_report_no_holdings",
       message: "Portfolio report data contains no holdings.",
       suggestedFix: "Regenerate the weekly portfolio data packet from PortfolioApp.",
@@ -565,7 +590,7 @@ function readPortfolioReport(issues) {
     schemaVersion: cleanNumber(parsed.schemaVersion),
     reportDate: cleanString(parsed.reportDate),
     generatedAt: cleanString(parsed.generatedAt),
-    sourcePath: toPosixPath(path.relative(VAULT_PATH, reportPath)),
+    sourcePath,
     window: compactObject({
       start: cleanString(parsed.window?.start),
       end: cleanString(parsed.window?.end),
@@ -604,7 +629,47 @@ function readPortfolioReport(issues) {
   });
 }
 
-function main() {
+async function readPortfolioReport(issues) {
+  const remoteReport = await fetchPortfolioReportData(issues);
+  if (remoteReport?.data) {
+    return normalizePortfolioReport(remoteReport.data, remoteReport.sourcePath, issues);
+  }
+
+  const reportPath = latestPortfolioReportPath();
+  if (!reportPath) {
+    issues.add({
+      severity: "warning",
+      filePath: WEEKLY_REPORT_DATA_DIR,
+      code: "portfolio_report_missing",
+      message: "No weekly portfolio data packet was found.",
+      suggestedFix:
+        "Generate a weekly portfolio report or set PORTFOLIO_REPORT_DATA_PATH.",
+    });
+    return undefined;
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(fs.readFileSync(reportPath, "utf8"));
+  } catch (error) {
+    issues.add({
+      severity: "error",
+      filePath: toPosixPath(path.relative(VAULT_PATH, reportPath)),
+      code: "portfolio_report_invalid_json",
+      message: `Portfolio report data could not be parsed: ${error.message}`,
+      suggestedFix: "Regenerate the weekly portfolio data packet.",
+    });
+    return undefined;
+  }
+
+  return normalizePortfolioReport(
+    parsed,
+    toPosixPath(path.relative(VAULT_PATH, reportPath)),
+    issues
+  );
+}
+
+async function main() {
   const profileNotes = readNotes(COMPANY_PROFILE_DIR);
   const companyThesisNotes = readNotes(COMPANY_THESIS_DIR);
   const investmentNotes = readNotes(INVESTMENT_THESIS_DIR);
@@ -613,7 +678,7 @@ function main() {
   const companyThesisIndex = buildNoteIndex(companyThesisNotes);
   const investmentIndex = buildNoteIndex(investmentNotes);
   const issues = issueFactory();
-  const portfolio = readPortfolioReport(issues);
+  const portfolio = await readPortfolioReport(issues);
   const holdingByTicker = new Map(
     (portfolio?.holdings || []).map((holding) => [holding.ticker, holding])
   );
@@ -891,4 +956,7 @@ function main() {
   );
 }
 
-main();
+main().catch((error) => {
+  console.error(error instanceof Error ? error.message : error);
+  process.exitCode = 1;
+});
